@@ -1,5 +1,5 @@
-#ifndef _VIDEO_
-#define _VIDEO_
+#ifndef _VIDEO_H
+#define _VIDEO_H
 
 
 #define MAXCHAR 100
@@ -34,11 +34,11 @@ static unsigned int num_seg = MAX_NUM_OF_SEGMENTS;
 //static struct VIDEO *ls_vd = NULL;
 
 /* Ham khoi tao list video */
-QPVD init_qpvd();
+QPVD *init_qpvd();
 
 /* Ham khoi tao video co nhieu qp */
-VIDEOS init_lst_vd();
+VIDEOS *init_lst_vd();
 /* Find max bitrate of video segments in set of QP */
-double find_seg_max(QPVD qpvd);
+double find_rate_max(QPVD *qpvd);
 
 #endif
