@@ -51,7 +51,7 @@ VIDEOS *load_data(const char *data_dir)
 }
 
 void print_data(const char *filename, VIDEOS *ls_vd, 
-                unsigned int num_vd, unsigned int num_seg, unsigned int num_qp) 
+                unsigned int n_vd, unsigned int n_seg, unsigned int n_qp) 
 {
     FILE *fd = fopen(filename, "w");
 
@@ -94,4 +94,15 @@ double str2num(char *str)
     return val/power;
 }
 
-
+void print_list_rate(const char *file_name, double *ls_rate) 
+{
+    FILE *fd = NULL;
+    fd = fopen(file_name, "w");
+    for (int i = 0; i < num_seg; i++) {
+        printf("%f\t", ls_rate[i]);
+        fprintf(fd, ",%f", ls_rate[i]);
+        if (((i+1)%5) == 0) printf("\n");
+    }
+    printf("\n");
+    fclose(fd);
+}

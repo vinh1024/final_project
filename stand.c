@@ -165,7 +165,6 @@ struct VIDEO *pick_adapt_R(double e, struct VIDEO *ls_vd, unsigned int num_vd, u
         for (int j = 0; j < MAX_NUM_OF_SEGMENTS; j++) {
             /*consider one segment*/
             if (ls_vd[i].ls_seg[j].ls_rate[num_qp-1] >= e) {
-                //printf("====> %f > %f\n", ls_vd[i].ls_seg[j].ls_rate[num_qp-1], e);
                 Bmax = ls_vd[i].ls_seg[j].ls_rate[num_qp-1];
                 qp_max = ls_vd[i].ls_seg[j].ls_qp[num_qp-1];
             }

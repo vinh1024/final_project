@@ -19,8 +19,10 @@ struct QP_VIDEO {
     unsigned int qp;
 };
 
+#define QPVD struct QP_VIDEO
+
 struct LIST_QP_VIDEO {
-    struct QP_VIDEO *ls_qpvd;
+    QPVD *ls_qpvd;
     char *vd_name;
 };
 
@@ -29,7 +31,7 @@ static unsigned int num_vd = NUM_VIDEO;
 static unsigned int num_seg = MAX_NUM_OF_SEGMENTS;
 
 #define VIDEOS struct LIST_QP_VIDEO
-#define QPVD struct QP_VIDEO
+
 
 //static struct VIDEO *ls_vd = NULL;
 
@@ -39,6 +41,6 @@ QPVD *init_qpvd();
 /* Ham khoi tao video co nhieu qp */
 VIDEOS *init_lst_vd();
 /* Find max bitrate of video segments in set of QP */
-double find_rate_max(QPVD *qpvd);
+double find_rate_max(double *ls_rate);
 
 #endif

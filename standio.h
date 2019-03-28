@@ -11,5 +11,6 @@ VIDEOS *load_data(const char *data_dir);
 void print_data(const char *filename, VIDEOS *ls_vd, 
                 unsigned int num_vd, unsigned int num_seg, unsigned int num_qp);
 
+void print_list_rate(const char *file_name, double *ls_rate);
 #endif
 
