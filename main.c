@@ -3,9 +3,8 @@
 #include "standio.h"
 #include "proc_video.h"
 
-//#define _DEBUG_
+#define _DEBUG_
 const char *file_data = "./VBR_video_bitrate/";
-
 
 int main(int arg, char **argv)
 {
@@ -48,19 +47,19 @@ int main(int arg, char **argv)
     printf("DEBUG MODE\n");
     //ls_data_tich_luy = data_tich_luy(ls_vd[0].ls_qpvd[0].ls_rate);
 
-    adapt_data = pick_adapt_R(147,ls_vd[0].ls_qpvd);
-    //print_list_rate("./data_print/adapt_data.csv", adapt_data->ls_rate);
+    adapt_data = pick_adapt_R(500,ls_vd[0].ls_qpvd);
+    print_list_rate("./data_print/adapt_data500.csv", adapt_data->ls_rate);
     //printf("QP adapt = %d", adapt_data->qp);
 
     ls_data_tich_luy = data_tich_luy(adapt_data->ls_rate);
 
-    //print_list_rate("./data_print/acc_data.csv", ls_data_tich_luy);
-    printf("---------------------------------\n");
+    print_list_rate("./data_print/acc_data500.csv", ls_data_tich_luy);
+
     env_data = envelop_vd(adapt_data->ls_rate);
 
     printf("Max rate: %f\n", find_rate_max(adapt_data->ls_rate));
     //d0 = cal_d0(env_data, RATE);
-    //print_list_rate("./data_print/envelop_data.csv", env_data);
+    print_list_rate("./data_print/envelop_data500.csv", env_data);
 #endif
 
     return 0;

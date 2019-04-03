@@ -90,7 +90,6 @@ double str2num(char *str)
         val = val * 10.0 + (str[i] - '0');
         power *= 10;
     }
-    //printf("------------%f", val/power);
     return val/power;
 }
 
