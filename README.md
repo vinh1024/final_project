@@ -1,2 +1,2 @@
-# final_project
+# Final Project
 My final project in the university

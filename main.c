@@ -1,5 +1,4 @@
 #include <stdio.h>
-
 #include "video.h"
 #include "standio.h"
 #include "proc_video.h"
@@ -13,8 +12,8 @@ int main(int arg, char **argv)
     VIDEOS *ls_vd = NULL;
     QPVD *ls_adapt = NULL;
 
-    double e = 300, u = 0.0;
-    double RATE = 3000;
+    double e = 0.0, u = 0.0;
+    double RATE = 1000;
     double max_rate = 0.0;
     double *ls_envelop_dt = (double *) malloc(sizeof(double) * num_seg);
     /*Load data*/
@@ -23,21 +22,20 @@ int main(int arg, char **argv)
     
 #ifndef _DEBUG_
     for (int i = 0; i < num_vd; i++) {
-        printf("video[%d]\n", i);
+        
+        printf("============video[%d]: %s=============\n", i, ls_vd[i].vd_name);
         max_rate = find_rate_max(ls_vd[i].ls_qpvd[0].ls_rate);
+        e = max_rate/100;
+        printf("max_rate %f\n", max_rate);
+        
+        while (e < max_rate) {
+            ls_adapt = pick_adapt_R(e, ls_vd[i].ls_qpvd);      
+            u = cal_U(ls_adapt, RATE);
+            if (u > 0) printf("e = %f\nU = %f\n", e, u);
+            e += max_rate/100;
+        }
+        e = 0.0;
         //printf("Max rate: %f" , find_rate_max(ls_vd[i].ls_qpvd[0].ls_rate));
-
-        ls_adapt = pick_adapt_R(e, ls_vd[i].ls_qpvd);
-
-        //ls_envelop_dt = envelop_vd(ls_adapt);
-
-        
-        
-        u = cal_U(ls_adapt, RATE);
-        printf("Video name: %s\n"
-               "Max rate segment: %f\t"
-               "U = %f\n",
-               ls_vd[i].vd_name, max_rate, u);
     }
     //printf("Epxilone = %f\n", e);
 #endif
@@ -45,14 +43,24 @@ int main(int arg, char **argv)
 #ifdef _DEBUG_
     double *ls_data_tich_luy = NULL;
     double *env_data = NULL;
-    const char *ev_data_file = "./data_print/Envelop_data.csv";
-    const char *acc_data_file = "./data_print/Accumulate_data.csv";
+    QPVD *adapt_data = NULL;
+    
     printf("DEBUG MODE\n");
-    ls_data_tich_luy = data_tich_luy(ls_vd[0].ls_qpvd[0].ls_rate);
-    print_list_rate(ev_data_file, ls_data_tich_luy);
+    //ls_data_tich_luy = data_tich_luy(ls_vd[0].ls_qpvd[0].ls_rate);
+
+    adapt_data = pick_adapt_R(147,ls_vd[0].ls_qpvd);
+    //print_list_rate("./data_print/adapt_data.csv", adapt_data->ls_rate);
+    //printf("QP adapt = %d", adapt_data->qp);
+
+    ls_data_tich_luy = data_tich_luy(adapt_data->ls_rate);
+
+    //print_list_rate("./data_print/acc_data.csv", ls_data_tich_luy);
     printf("---------------------------------\n");
-    env_data = envelop_vd(ls_vd[0].ls_qpvd[0].ls_rate);
-    print_list_rate(acc_data_file, env_data);
+    env_data = envelop_vd(adapt_data->ls_rate);
+
+    printf("Max rate: %f\n", find_rate_max(adapt_data->ls_rate));
+    //d0 = cal_d0(env_data, RATE);
+    //print_list_rate("./data_print/envelop_data.csv", env_data);
 #endif
 
     return 0;

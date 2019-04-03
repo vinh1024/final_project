@@ -18,7 +18,8 @@ QPVD *pick_adapt_R(double e, QPVD *ls_qpvd)
             if (ls_qpvd[num_qp - 1].ls_rate[i] > e) {
                 r_adapt = ls_qpvd[num_qp - 1].ls_rate[i];
                 qp_adapt = ls_qpvd[num_qp - 1].qp;
-            } else {
+            } else if (ls_qpvd[j].ls_rate[i] < e)
+            {
                 if (r_adapt < ls_qpvd[j].ls_rate[i]) {
                     r_adapt = ls_qpvd[j].ls_rate[i];
                     qp_adapt = ls_qpvd[j].qp;
@@ -32,7 +33,8 @@ QPVD *pick_adapt_R(double e, QPVD *ls_qpvd)
         sum_qp_adapt += qp_adapt;
         r_adapt = 0.0;
     }
-    vd_adapt->qp = qp_adapt/num_seg;
+    vd_adapt->qp = sum_qp_adapt/num_seg;
+    //print_list_rate("./data_print/test_adapt.csv", vd_adapt->ls_rate);
     return vd_adapt;
 }
 
@@ -79,7 +81,7 @@ void print_data_tich_luy(const char *file_name, VIDEOS *ls_vd)
     printf("Ghi du lieu tich luy vao file %s\n", file_name);
 }
 
-double *envelop_vd(double *ls_dt_tl)
+double *envelop_vd(double *ls_dt)
 {
     double *env_vd = NULL, *dt_tmp = NULL;
     unsigned int k = 0;
@@ -87,6 +89,7 @@ double *envelop_vd(double *ls_dt_tl)
     unsigned int index = num_seg;
     dt_tmp = (double *) malloc(sizeof(double) * num_seg);
     env_vd = (double *) malloc(sizeof(double) * num_seg);
+    //print_list_rate("./data_print/data_adapt.csv", ls_dt);
     for (int i = 0; i < num_seg; i++) {
         dt_tmp[i] = 0.0;
     }
@@ -103,18 +106,22 @@ double *envelop_vd(double *ls_dt_tl)
             i = 1, k = 292:                    D[292] = R[292] + R[293]
             */
             //printf("%d\t %d\n", i, k);
-            dt_tmp[k] += ls_dt_tl[i + k];
+            dt_tmp[k] = dt_tmp[k] + ls_dt[i + k];
+#ifdef _DEBUG_
+            if (i < 2) printf("dtmp[%d] = %f\t data[%d] = %f\n", k, dt_tmp[k], k, ls_dt[k]);
+#endif
             k++;
             //  printf("%d\n", k);
         }
         for (int j = 0; j < index; j++) {
             R_max = (R_max > dt_tmp[j]) ? R_max : dt_tmp[j];
+            //printf("R max = %f\n", R_max);
         }
         index -= 1;
         env_vd[i] = R_max;
         R_max = 0.0;
     }
-    printf("Envelop data done!\n");
+    //printf("Envelop data done!\n");
     return env_vd;
 }
 
@@ -122,12 +129,12 @@ double cal_d0(double *ls_ev_data, double rate_r)
 {
     double delta_max = 0.0, delta = 0.0;
     for (int i = 0; i < num_seg; i++) {
-        delta = rate_r * i - ls_ev_data[i];
+        delta = ls_ev_data[i] - rate_r * i; 
         delta_max = (delta_max > delta) ? delta_max : delta;
     }
-    printf("------------delta max = %f\n", delta_max);
+    //printf("------------delta max = %f\n", delta_max);
     if ((delta_max >= 0) && (delta_max < 0.5 * rate_r)) {
-        printf("delta max = %f\n", delta_max);
+        //printf("delta max = %f\n", delta_max);
         return delta_max/rate_r;
     }
 
@@ -137,23 +144,17 @@ double cal_d0(double *ls_ev_data, double rate_r)
 double cal_U(QPVD *adapt_vd, double rate)
 {
     double Ud = 0.0, Uq = 0.0, d0 = 0.0;
-    //QPVD *env_vd = NULL;
     double *ls_data_tl = NULL, *env_vd = NULL;
-
-    printf("Caculate U\n");
-    //ls_data_tl = data_tich_luy(adapt_vd->ls_rate);  //Done
-
-    printf("---------------------------------------\n");
-    env_vd = envelop_vd(adapt_vd);
+    env_vd = envelop_vd(adapt_vd->ls_rate);
 
     d0 = cal_d0(env_vd, rate);
 
     if (d0 < 0)
         return -1;
-    printf("===========QP_avg = %d\td0 = %f\n", adapt_vd->qp, d0);
+    printf("QP = %d\t\td0 = %f\n", adapt_vd->qp, d0);
     Uq = -0.172 * adapt_vd->qp + 9.249;
     Ud = -0.862 * log((d0 + 6.718)) + 5;
 
-    return Uq + Ud;
+    return 0.8 * Uq + 0.2 * Ud;
 }
 
