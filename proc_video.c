@@ -146,15 +146,13 @@ double cal_U(QPVD *adapt_vd, double rate)
     double Ud = 0.0, Uq = 0.0, d0 = 0.0;
     double *ls_data_tl = NULL, *env_vd = NULL;
     env_vd = envelop_vd(adapt_vd->ls_rate);
-
     d0 = cal_d0(env_vd, rate);
 
     if (d0 < 0)
         return -1;
-    printf("QP = %d\t\td0 = %f\n", adapt_vd->qp, d0);
     Uq = -0.172 * adapt_vd->qp + 9.249;
     Ud = -0.862 * log((d0 + 6.718)) + 5;
-
+    printf("QP = %d\t\td0 = %f\t U = %f\n", adapt_vd->qp, d0, (0.8*Uq + 0.2*Ud));
     return 0.8 * Uq + 0.2 * Ud;
 }
 

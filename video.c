@@ -20,15 +20,23 @@ VIDEOS *init_lst_vd()
     return vd_lsqp;
 }
 
-double find_rate_max(double *ls_rate)
+double find_max_rate(double *ls_rate)
 {
     double seg_max_rate = 0.0;
-    printf("Finding maximum rate of segment\n");
+    //printf("Finding maximum rate of segment\n");
     for (int i = 0; i < num_seg; i++) {
         
         seg_max_rate = (seg_max_rate > ls_rate[i]) ? seg_max_rate : ls_rate[i];
         //printf("%d\t %f\t %f\n",i, ls_rate[i], seg_max_rate);
     }
-    printf("Find maximum rate done!\n");
+    //printf("Find maximum rate done!\n");
     return seg_max_rate;
+}
+double find_min_rate(double *ls_rate)
+{
+    double seg_min_rate = 0.0;
+    for (int i = 0; i < num_seg; i++) {
+        seg_min_rate = (seg_min_rate < ls_rate[i]) ? seg_min_rate : ls_rate[i];
+    }
+    return seg_min_rate;
 }

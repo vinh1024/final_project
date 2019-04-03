@@ -3,7 +3,7 @@
 #include "standio.h"
 #include "proc_video.h"
 
-#define _DEBUG_
+//#define _DEBUG_
 const char *file_data = "./VBR_video_bitrate/";
 
 int main(int arg, char **argv)
@@ -11,28 +11,33 @@ int main(int arg, char **argv)
     VIDEOS *ls_vd = NULL;
     QPVD *ls_adapt = NULL;
 
-    double e = 0.0, u = 0.0;
-    double RATE = 1000;
-    double max_rate = 0.0;
+    double e = 0.0, u = 0.0, u_max =0.0;
+    double RATE = 2000, step;
+    double max_rate = 0.0, min_rate = 0.0;
     double *ls_envelop_dt = (double *) malloc(sizeof(double) * num_seg);
     /*Load data*/
     ls_vd = load_data(file_data);
     //print_data("data1.csv", ls_vd, num_vd, num_seg, num_qp);
     
 #ifndef _DEBUG_
-    for (int i = 0; i < num_vd; i++) {
+    for (int i = 0; i < 1; i++) {
         
-        printf("============video[%d]: %s=============\n", i, ls_vd[i].vd_name);
-        max_rate = find_rate_max(ls_vd[i].ls_qpvd[0].ls_rate);
-        e = max_rate/100;
-        printf("max_rate %f\n", max_rate);
+        printf("===video[%d]: %s\t RATE: %f===\n", i, ls_vd[i].vd_name, RATE);
+        max_rate = find_max_rate(ls_vd[i].ls_qpvd[0].ls_rate);
+        min_rate = find_min_rate(ls_vd[i].ls_qpvd[num_qp-1].ls_rate);
+        e = min_rate;
+        step = (max_rate - min_rate)/250;
+        //printf("max_rate %f\n", max_rate);
         
         while (e < max_rate) {
             ls_adapt = pick_adapt_R(e, ls_vd[i].ls_qpvd);      
             u = cal_U(ls_adapt, RATE);
-            if (u > 0) printf("e = %f\nU = %f\n", e, u);
-            e += max_rate/100;
+            u_max = (u_max > u) ? u_max : u;
+            
+            e += step;
         }
+        if (u_max > 0) printf("U_max = %f\n", u_max);
+        u_max = 0.0;
         e = 0.0;
         //printf("Max rate: %f" , find_rate_max(ls_vd[i].ls_qpvd[0].ls_rate));
     }
