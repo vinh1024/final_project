@@ -1,9 +1,9 @@
 #ifndef _PROC_VIDEO_H
 #define _PROC_VIDEO_H
 
+#define _PARAM_
 #include "video.h"
 #include "standio.h"
-
 
 QPVD *pick_adapt_R(double e, QPVD *ls_qpvd);
 

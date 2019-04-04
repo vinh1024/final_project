@@ -52,7 +52,7 @@ double *data_tich_luy(double *ls_rate)
 
 void print_data_tich_luy(const char *file_name, VIDEOS *ls_vd)
 {
-    double sum = 0.0;
+    //double sum = 0.0;
     VIDEOS *ls_vd_tl = (VIDEOS *) malloc(sizeof(VIDEOS) * num_vd);
     FILE *fd = NULL;
     fd = fopen(file_name, "w");
@@ -144,7 +144,8 @@ double cal_d0(double *ls_ev_data, double rate_r)
 double cal_U(QPVD *adapt_vd, double rate)
 {
     double Ud = 0.0, Uq = 0.0, d0 = 0.0;
-    double *ls_data_tl = NULL, *env_vd = NULL;
+    //double *ls_data_tl = NULL, 
+    double *env_vd = NULL;
     env_vd = envelop_vd(adapt_vd->ls_rate);
     d0 = cal_d0(env_vd, rate);
 

@@ -1,3 +1,5 @@
+#define _PARAM_
+#define _NUM_VD_
 #include "video.h"
 #include <stdio.h>
 #include <stdlib.h>

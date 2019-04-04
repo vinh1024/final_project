@@ -1,4 +1,5 @@
 #include <stdio.h>
+#define _PARAM_
 #include "video.h"
 #include "standio.h"
 #include "proc_video.h"
@@ -12,17 +13,17 @@ int main(int arg, char **argv)
     QPVD *ls_adapt = NULL;
 
     double e = 0.0, u = 0.0, u_max =0.0;
-    double RATE = 2000, step;
+    double RATE = 500, step;
     double max_rate = 0.0, min_rate = 0.0;
-    double *ls_envelop_dt = (double *) malloc(sizeof(double) * num_seg);
+    //double *ls_envelop_dt = (double *) malloc(sizeof(double) * num_seg);
     /*Load data*/
     ls_vd = load_data(file_data);
     //print_data("data1.csv", ls_vd, num_vd, num_seg, num_qp);
     
 #ifndef _DEBUG_
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < num_vd; i++) {
         
-        printf("===video[%d]: %s\t RATE: %f===\n", i, ls_vd[i].vd_name, RATE);
+        printf("===video[%d]: %s\tNum of segments: %d\tRATE: %f===\n", i, ls_vd[i].vd_name, num_seg, RATE);
         max_rate = find_max_rate(ls_vd[i].ls_qpvd[0].ls_rate);
         min_rate = find_min_rate(ls_vd[i].ls_qpvd[num_qp-1].ls_rate);
         e = min_rate;

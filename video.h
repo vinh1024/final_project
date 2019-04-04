@@ -9,10 +9,10 @@
 #define NUM_QP 6
 #define INIT_QP 1
 
-
+#ifndef _PARAM_
 static unsigned int QUANTIZIATION_PARAMS[] = {22, 28, 34, 38, 42, 48};
 static char *VIDEO_NAME[10] = {"lam", "sony", "star", "terminate", "tokyo"};
-
+#endif
 
 struct QP_VIDEO {
     double *ls_rate;
@@ -27,7 +27,9 @@ struct LIST_QP_VIDEO {
 };
 
 static unsigned int num_qp = NUM_QP;
+#ifndef _NUM_VD_
 static unsigned int num_vd = NUM_VIDEO;
+#endif
 static unsigned int num_seg = MAX_NUM_OF_SEGMENTS;
 
 #define VIDEOS struct LIST_QP_VIDEO
