@@ -34,7 +34,7 @@ VIDEOS *load_data(const char *data_dir)
                 exit(EXIT_FAILURE);
             }
             ls_vd[i].vd_name = VIDEO_NAME[i];
-            ls_vd[i].ls_qpvd[j].qp = QUANTIZIATION_PARAMS[j];
+            ls_vd[i].ls_qpvd[j].qp = (double)QUANTIZIATION_PARAMS[j];
             /* Get data for segment */
             while (fgets(str, MAXCHAR, fd)) {
                 ls_vd[i].ls_qpvd[j].ls_rate[k] = str2num(str);
@@ -63,7 +63,7 @@ void print_data(const char *filename, VIDEOS *ls_vd,
     for (int i = 0; i < num_vd; i++) {
         fprintf(fd, "%s\n", ls_vd[i].vd_name);
         for (int j = 0; j < num_qp; j++) {
-            fprintf(fd, "QP%d", ls_vd[i].ls_qpvd[j].qp);
+            fprintf(fd, "QP%f", ls_vd[i].ls_qpvd[j].qp);
             for (int k = 0; k < num_seg; k++) {
                 fprintf(fd, ",%f", ls_vd[i].ls_qpvd[j].ls_rate[k]);
             }

@@ -23,19 +23,11 @@ bool h_empty(heap *h);
 
 void swap(node *n1, node *n2);
 
-// processing heap
-
-//void heapify(heap *h, int i);
-
-//void build_hmax(heap *hm, node *ls_nd, unsigned int size);
-
 void hpush(heap *hm, node *nd);
 
 node *hpop_peak(heap *hm);
 
 //Display
-
-//void print_node(node nd);
 
 void print_heap(heap *h);
 

@@ -7,14 +7,14 @@
 
 QPVD *pick_adapt_R(double e, QPVD *ls_qpvd);
 
-double *data_tich_luy(double *ls_rate);
+double *acc_data(double *ls_rate);
 
-void print_data_tich_luy(const char *file_name, VIDEOS *ls_vd);
+void print_acc_data(const char *file_name, VIDEOS *ls_vd);
 
-double *envelop_vd(double *ls_dt_tl);
+double *env_data(double *ls_dt);
 
-double cal_d0(double *ls_ev_data, double rate_r);
+//double cal_d0(double *ls_ev_data, double rate_r);
 
-double cal_U(QPVD *adapt_vd, double rate);
+double calculate_U(double *ls_env,double qp_avg, double R);
 
 #endif

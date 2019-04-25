@@ -8,7 +8,7 @@
 #define MAX_PATH_LEN 256
 #define NUM_QP 6
 #define INIT_QP 1
-
+#define T (2)                   //thoi gian cua mot segment
 #ifndef _PARAM_
 static unsigned int QUANTIZIATION_PARAMS[] = {22, 28, 34, 38, 42, 48};
 static char *VIDEO_NAME[10] = {"lam", "sony", "star", "terminate", "tokyo"};
@@ -16,7 +16,7 @@ static char *VIDEO_NAME[10] = {"lam", "sony", "star", "terminate", "tokyo"};
 
 struct QP_VIDEO {
     double *ls_rate;
-    unsigned int qp;
+    double qp;
 };
 
 #define QPVD struct QP_VIDEO

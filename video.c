@@ -36,7 +36,7 @@ double find_max_rate(double *ls_rate)
 }
 double find_min_rate(double *ls_rate)
 {
-    double seg_min_rate = 0.0;
+    double seg_min_rate = 20000;
     for (int i = 0; i < num_seg; i++) {
         seg_min_rate = (seg_min_rate < ls_rate[i]) ? seg_min_rate : ls_rate[i];
     }

@@ -33,24 +33,24 @@ QPVD *pick_adapt_R(double e, QPVD *ls_qpvd)
         sum_qp_adapt += qp_adapt;
         r_adapt = 0.0;
     }
-    vd_adapt->qp = sum_qp_adapt/num_seg;
+    vd_adapt->qp = ((double)sum_qp_adapt)/num_seg;
     //print_list_rate("./data_print/test_adapt.csv", vd_adapt->ls_rate);
     return vd_adapt;
 }
 
-double *data_tich_luy(double *ls_rate) 
+double *acc_data(double *ls_rate) 
 {
     double sum = 0.0;
-    double *ls_dt_tl = (double *) malloc(sizeof(double) * num_seg);
-
-    for (int i = 0; i < num_seg; i++) {
-        sum += ls_rate[i]; 
+    double *ls_dt_tl = (double *) malloc(sizeof(double) * (num_seg + 1));
+    ls_dt_tl[0] = sum;
+    for (int i = 1; i <= num_seg; i++) {
+        sum += ls_rate[i-1] * T; 
         ls_dt_tl[i] = sum;
     }
     return ls_dt_tl;
 }
 
-void print_data_tich_luy(const char *file_name, VIDEOS *ls_vd)
+void print_acc_data(const char *file_name, VIDEOS *ls_vd)
 {
     //double sum = 0.0;
     VIDEOS *ls_vd_tl = (VIDEOS *) malloc(sizeof(VIDEOS) * num_vd);
@@ -81,35 +81,24 @@ void print_data_tich_luy(const char *file_name, VIDEOS *ls_vd)
     printf("Ghi du lieu tich luy vao file %s\n", file_name);
 }
 
-double *envelop_vd(double *ls_dt)
+double *env_data(double *ls_dt)
 {
-    double *env_vd = NULL, *dt_tmp = NULL;
+    double *ls_env = (double *) malloc(sizeof(double) * (num_seg +1));
     unsigned int k = 0;
     double R_max = 0.0;
-    unsigned int index = num_seg;
-    dt_tmp = (double *) malloc(sizeof(double) * num_seg);
-    env_vd = (double *) malloc(sizeof(double) * num_seg);
+    unsigned int index = num_seg +1;
+    double dt_tmp[num_seg];
+   
     //print_list_rate("./data_print/data_adapt.csv", ls_dt);
-    for (int i = 0; i < num_seg; i++) {
+    for (int i = 0; i <= num_seg; i++) {
         dt_tmp[i] = 0.0;
     }
-    for (int i = 0; i < num_seg; i++) {
+    for (int i = 1; i <= num_seg; i++) {
         k = 0;
-        while ((k < index) && (index > 0)) {
-            /* D[k] = D[k] + R[i+k]
-            i = 0, k = 0: D[0] = D[0] + R[0]  (D[0] = R[0])
-            i = 0, k = 1: D[1] = D[1] + R[1]  (D[1] = R[1])
-            i = 0, ....
-            i = 1, k = 0: D[0] = D[0] + R[1]  (D[0] = R[0] + R[1])
-            i = 1, k = 1: D[1] = D[0] + R[2]  (D[1] = R[1] + R[2])
-
-            i = 1, k = 292:                    D[292] = R[292] + R[293]
-            */
+        while ((k < index) && (index > 1)) {
+            
             //printf("%d\t %d\n", i, k);
-            dt_tmp[k] = dt_tmp[k] + ls_dt[i + k];
-#ifdef _DEBUG_
-            if (i < 2) printf("dtmp[%d] = %f\t data[%d] = %f\n", k, dt_tmp[k], k, ls_dt[k]);
-#endif
+            dt_tmp[k] = dt_tmp[k] + ls_dt[i + k] * 2;
             k++;
             //  printf("%d\n", k);
         }
@@ -118,42 +107,43 @@ double *envelop_vd(double *ls_dt)
             //printf("R max = %f\n", R_max);
         }
         index -= 1;
-        env_vd[i] = R_max;
+        ls_env[i] = R_max;
         R_max = 0.0;
     }
-    //printf("Envelop data done!\n");
-    return env_vd;
+    return ls_env;
 }
+/* D[k] = D[k] + R[i+k]
+i = 0, k = 0: D[0] = D[0] + R[0]  (D[0] = R[0])
+i = 0, k = 1: D[1] = D[1] + R[1]  (D[1] = R[1])
+i = 0, ....
+i = 1, k = 0: D[0] = D[0] + R[1]  (D[0] = R[0] + R[1])
+i = 1, k = 1: D[1] = D[0] + R[2]  (D[1] = R[1] + R[2])
 
-double cal_d0(double *ls_ev_data, double rate_r)
-{
-    double delta_max = 0.0, delta = 0.0;
-    for (int i = 0; i < num_seg; i++) {
-        delta = ls_ev_data[i] - rate_r * i; 
-        delta_max = (delta_max > delta) ? delta_max : delta;
-    }
-    //printf("------------delta max = %f\n", delta_max);
-    if ((delta_max >= 0) && (delta_max < 0.5 * rate_r)) {
-        //printf("delta max = %f\n", delta_max);
-        return delta_max/rate_r;
-    }
+i = 1, k = 292:                    D[292] = R[292] + R[293]
+*/
 
-    return -1;
-}
-
-double cal_U(QPVD *adapt_vd, double rate)
+double calculate_U(double *ls_env, double qp_avg, double R)
 {
     double Ud = 0.0, Uq = 0.0, d0 = 0.0;
-    //double *ls_data_tl = NULL, 
-    double *env_vd = NULL;
-    env_vd = envelop_vd(adapt_vd->ls_rate);
-    d0 = cal_d0(env_vd, rate);
-
-    if (d0 < 0)
-        return -1;
-    Uq = -0.172 * adapt_vd->qp + 9.249;
-    Ud = -0.862 * log((d0 + 6.718)) + 5;
-    printf("QP = %d\t\td0 = %f\t U = %f\n", adapt_vd->qp, d0, (0.8*Uq + 0.2*Ud));
-    return 0.8 * Uq + 0.2 * Ud;
+    double dmax = 0.0, delta = 0.0;
+    for (int i = 0; i <= num_seg; i++) {
+        delta = ls_env[i] - R * 2 * i; 
+        if (dmax < delta)
+            dmax = delta;
+        //if (i < 2) printf("delta: %f, dmax: %f\n", delta, dmax);
+    }
+    //printf("d0======: %f\t", d0);
+    d0 = dmax/R;    
+    //printf("R = %f\tdmax = %f\t", R, dmax);
+    
+    //printf("------------d0 = %f\n", d0);
+    if (d0 >= 0 && d0 < 1) {
+        Uq = -0.172 * qp_avg + 9.249;
+        Ud = -0.862 * log((d0 + 6.718)) + 5;
+        printf("QP = %f\t\td0 = %f\t U = %f\n", qp_avg, d0, (0.8*Uq + 0.2*Ud));
+        return 0.8 * Uq + 0.2 * Ud;
+    } else 
+        printf("d0 = %f\n",d0);
+    return 0;
 }
 

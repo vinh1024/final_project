@@ -69,7 +69,6 @@ void print_node(node nd)
 {
     //printf("[%f, %f]  ", nd.U, nd.rate);
     printf("[%f]  ", nd.U);
-
 }
 
 void print_heap(heap *h)
@@ -92,13 +91,13 @@ void h_free(heap *h)
     free(h);
 }
 
-#define _DEBUG_HEAP_
+//#define _DEBUG_HEAP_
 #ifdef _DEBUG_HEAP_
 
 int main()
 {
     printf("================DEBUG HEAP=================\n");
-    double a[10] = {45, 24, 85, 100, 12, 42, 78, 8, 1, 58};
+    double a[15] = {45, 32, 90, 104, 200, 13, 24, 85, 100, 12, 42, 78, 8, 1, 58};
     node *arr = (node *) malloc(sizeof(node) * 10);
     for (int i = 0; i < 10; i++) {
         arr[i].U = a[i];
@@ -106,12 +105,12 @@ int main()
     }
     printf("\n");
 
-    heap *h = h_init(10);
+    heap *h = h_init(15);
 
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 15; i++)
     {
         hpush(h, &(arr[i]));
-    }   
+    }       
 
     printf("===============PRINT HEAP=================\n");
     printf("size of heap: %d\n", h->size);
