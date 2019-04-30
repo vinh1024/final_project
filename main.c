@@ -95,7 +95,7 @@ int main(int arg, char **argv)
     double max_rate = 0.0, min_rate = 0.0;
     double *env = (double *) malloc(sizeof(double) * num_seg);
     node *tmp = (node *) malloc(sizeof(node)); 
-    heap *h = h_init(num_vd);
+    
 
     double arr[num_vd][num_rate][2];
     int select[num_vd];
@@ -132,42 +132,53 @@ int main(int arg, char **argv)
         }
     }
     double sumR = 0, BW = 3000, old_rate;
+    heap *h = NULL;
 
+    for (BW = 3000; BW <= 15000;) {
     //printf("tmp->rate = %f\n", tmp->rate);
-    for (int i = 0; i < num_vd; i++) {
-        tmp->rate = arr[i][0][0];
-        tmp->U = arr[i][0][1];
-        tmp->alpha = (arr[i][1][1] - arr[i][0][1])/(arr[i][1][0] - arr[i][0][0]);
-        tmp->vd_id = i;
-        tmp->rt_id = 0;
-        hpush(h, tmp);
-        sumR += tmp->rate;
+        h = h_init(num_vd);
+        sumR = 0;
+        for (int i = 0; i < num_vd; i++) {
+            tmp->rate = arr[i][0][0];
+            tmp->U = arr[i][0][1];
+            tmp->alpha = (arr[i][1][1] - arr[i][0][1])/(arr[i][1][0] - arr[i][0][0]);
+            tmp->vd_id = i;
+            tmp->rt_id = 0;
+            hpush(h, tmp);
+            sumR += tmp->rate;
+        }
+        if (BW == 4000) print_heap(h);
+        printf("SumR = %f\n", sumR);
+        while ((h->size > 0)) {
+            tmp = hpop_peak(h);
+            old_rate = tmp->rate;
+            tmp->rate = arr[tmp->vd_id][tmp->rt_id][0];
+            sumR = sumR + tmp->rate - old_rate;
+            if (sumR <= BW) {
+                select[tmp->vd_id] = tmp->rt_id;
+                tmp->U = arr[tmp->vd_id][tmp->rt_id][1];
+                tmp->rt_id += 1;
+                tmp->alpha = (arr[tmp->vd_id][tmp->rt_id + 1][1] - tmp->U)/
+                             (arr[tmp->vd_id][tmp->rt_id + 1][0] - tmp->rate);
+                hpush(h, tmp);
+                if (BW == 4000) print_heap(h);
+            } else break;
+        }
+        sumR = 0;
+        printf("=============BW: %f===============\n", BW);
+        for (int i = 0; i < num_vd; i++) {
+            printf("VIDEO: %s\t, rate: %f\t, U: %f\n", ls_vd[i].vd_name,
+                                                       arr[i][select[i]][0],
+                                                       arr[i][select[i]][1]);
+            sumR += arr[i][select[i]][0];
+        }
+        printf("SUM RATE: %f\n", sumR);
+        BW += 1000;
+        h_free(h);
     }
     
-    while ((h->size > 0)) {
-        tmp = hpop_peak(h);
-        old_rate = tmp->rate;
-        tmp->rate = arr[tmp->vd_id][tmp->rt_id][0];
-        sumR = sumR + tmp->rate - old_rate;
-        if (sumR <= BW) {
-            select[tmp->vd_id] = tmp->rt_id;
-            tmp->U = arr[tmp->vd_id][tmp->rt_id][1];
-            tmp->rt_id += 1;
-            tmp->alpha = (arr[tmp->vd_id][tmp->rt_id + 1][1] - tmp->U)/
-                         (arr[tmp->vd_id][tmp->rt_id + 1][0] - tmp->rate);
-            hpush(h, tmp);
-        } else break;
-    }
-    sumR = 0;
-    //print_heap(h);
-    for (int i = 0; i < num_vd; i++) {
-        printf("VIDEO: %s\t, rate: %f\t, U: %f\n", ls_vd[i].vd_name,
-                                                   arr[i][select[i]][0],
-                                                   arr[i][select[i]][1]);
-        sumR += arr[i][select[i]][0];
-    }
-    printf("SUM RATE: %f\n", sumR);
-    h_free(h);
+    
+    
 #endif
 
 #ifdef _FIND_BW_
