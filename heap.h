@@ -9,6 +9,9 @@
 typedef struct NODE {
     double rate;
     double U;
+    double alpha;
+    int vd_id;
+    int rt_id;
 }node;
 
 typedef struct HEAP {
@@ -18,6 +21,8 @@ typedef struct HEAP {
 
 
 heap *h_init(unsigned int num_nd);
+
+void equal(node *n1, node *n2);
 
 bool h_empty(heap *h);
 
@@ -29,6 +34,7 @@ node *hpop_peak(heap *hm);
 
 //Display
 
+void print_node(node *nd);
 void print_heap(heap *h);
 
 void h_free(heap *h);

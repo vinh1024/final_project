@@ -43,6 +43,5 @@ QPVD *init_qpvd();
 /* Ham khoi tao video co nhieu qp */
 VIDEOS *init_lst_vd();
 /* Find max bitrate of video segments in set of QP */
-double find_max_rate(double *ls_rate);
-double find_min_rate(double *ls_rate);
+
 #endif

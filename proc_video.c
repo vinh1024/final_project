@@ -5,6 +5,9 @@
 #include "proc_video.h"
 #include "standio.h"
 
+
+#define d0max (0.5)
+
 QPVD *pick_adapt_R(double e, QPVD *ls_qpvd)
 {
     QPVD *vd_adapt = (QPVD *) malloc(sizeof(QPVD));
@@ -88,8 +91,6 @@ double *env_data(double *ls_dt)
     double R_max = 0.0;
     unsigned int index = num_seg +1;
     double dt_tmp[num_seg];
-   
-    //print_list_rate("./data_print/data_adapt.csv", ls_dt);
     for (int i = 0; i <= num_seg; i++) {
         dt_tmp[i] = 0.0;
     }
@@ -113,13 +114,12 @@ double *env_data(double *ls_dt)
     return ls_env;
 }
 /* D[k] = D[k] + R[i+k]
-i = 0, k = 0: D[0] = D[0] + R[0]  (D[0] = R[0])
-i = 0, k = 1: D[1] = D[1] + R[1]  (D[1] = R[1])
-i = 0, ....
-i = 1, k = 0: D[0] = D[0] + R[1]  (D[0] = R[0] + R[1])
-i = 1, k = 1: D[1] = D[0] + R[2]  (D[1] = R[1] + R[2])
-
-i = 1, k = 292:                    D[292] = R[292] + R[293]
+    i = 0, k = 0: D[0] = D[0] + R[0]  (D[0] = R[0])
+    i = 0, k = 1: D[1] = D[1] + R[1]  (D[1] = R[1])
+    i = 0, ....
+    i = 1, k = 0: D[0] = D[0] + R[1]  (D[0] = R[0] + R[1])
+    i = 1, k = 1: D[1] = D[0] + R[2]  (D[1] = R[1] + R[2])
+    i = 1, k = 292:                    D[292] = R[292] + R[293]
 */
 
 double calculate_U(double *ls_env, double qp_avg, double R)
@@ -130,20 +130,37 @@ double calculate_U(double *ls_env, double qp_avg, double R)
         delta = ls_env[i] - R * 2 * i; 
         if (dmax < delta)
             dmax = delta;
-        //if (i < 2) printf("delta: %f, dmax: %f\n", delta, dmax);
     }
-    //printf("d0======: %f\t", d0);
-    d0 = dmax/R;    
-    //printf("R = %f\tdmax = %f\t", R, dmax);
-    
-    //printf("------------d0 = %f\n", d0);
+    d0 = dmax/R;
     if (d0 >= 0 && d0 < 1) {
         Uq = -0.172 * qp_avg + 9.249;
         Ud = -0.862 * log((d0 + 6.718)) + 5;
-        printf("QP = %f\t\td0 = %f\t U = %f\n", qp_avg, d0, (0.8*Uq + 0.2*Ud));
+        //printf("QP = %f\t\td0 = %f\t U = %f\n", qp_avg, d0, (0.8*Uq + 0.2*Ud));
         return 0.8 * Uq + 0.2 * Ud;
-    } else 
-        printf("d0 = %f\n",d0);
+    }
     return 0;
 }
 
+
+double find_min_rate(double *ls_vd)
+{
+    double min_r, R = 0.0;
+    double *ls_env_minqp = env_data(ls_vd);
+    for (int i = 1; i <= num_seg; i++) {
+        R = ls_env_minqp[i]/(i * T + d0max);
+        min_r = (R < min_r) ? min_r : R;
+    }
+    return min_r;
+}
+
+double find_max_rate(double *ls_vd)
+{
+    double max_r, R = 0.0;
+    double *ls_env_maxqp = env_data(ls_vd);
+    for (int i = 1; i <= num_seg; i++) {
+        R = ls_env_maxqp[i]/(i * T);
+        max_r = (max_r < R) ? R : max_r;
+    }
+    //printf("Find maximum rate done!\n");
+    return max_r;
+}
