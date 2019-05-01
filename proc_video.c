@@ -122,6 +122,31 @@ double *env_data(double *ls_dt)
     i = 1, k = 292:                    D[292] = R[292] + R[293]
 */
 
+double *calculate_U1(double *ls_env, double qp_avg, double R)
+{
+    double *d0nU = (double *) malloc(sizeof(double) * 2);
+    double Ud = 0.0, Uq = 0.0, d0 = 0.0;
+    double dmax = 0.0, delta = 0.0;
+    for (int i = 0; i <= num_seg; i++) {
+        delta = ls_env[i] - R * 2 * i; 
+        if (dmax < delta)
+            dmax = delta;
+    }
+    d0 = dmax/R;
+    Uq = -0.172 * qp_avg + 9.249;
+    Ud = -0.862 * log((d0 + 6.718)) + 5;
+    if (d0 >= 0 && d0 < 0.5) {
+        //printf("QP = %f\t\td0 = %f\t U = %f\n", qp_avg, d0, (0.8*Uq + 0.2*Ud));
+        d0nU[0] = d0;
+        d0nU[1] = 0.8 * Uq + 0.2 * Ud;
+        return d0nU;
+    } else {
+        d0nU[0] = 0;
+        d0nU[1] = 0;
+        return d0nU;
+    }
+}
+
 double calculate_U(double *ls_env, double qp_avg, double R)
 {
     double Ud = 0.0, Uq = 0.0, d0 = 0.0;
@@ -135,7 +160,7 @@ double calculate_U(double *ls_env, double qp_avg, double R)
     if (d0 >= 0 && d0 < 1) {
         Uq = -0.172 * qp_avg + 9.249;
         Ud = -0.862 * log((d0 + 6.718)) + 5;
-        //printf("QP = %f\t\td0 = %f\t U = %f\n", qp_avg, d0, (0.8*Uq + 0.2*Ud));
+        printf("QP = %f\t\td0 = %f\t U = %f\n", qp_avg, d0, (0.8*Uq + 0.2*Ud));
         return 0.8 * Uq + 0.2 * Ud;
     }
     return 0;

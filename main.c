@@ -6,9 +6,9 @@
 #include "proc_video.h"
 #include "heap.h"
 #define num_rate (20)
-//#define _ONE_VIDEO_
+#define _ONE_VIDEO_
 //#define _DEBUG_
-#define _MAIN_
+//#define _MAIN_
 //#define _FIND_BW_
 
 const char *file_data = "./VBR_video_bitrate/";
@@ -16,48 +16,75 @@ const char *file_data = "./VBR_video_bitrate/";
 int main(int arg, char **argv)
 {
     VIDEOS *ls_vd = NULL;
-    
     ls_vd = load_data(file_data);
 
 #ifdef _ONE_VIDEO_
+    
+    /* ADAPTIVE MODE */
+
     QPVD *ls_adapt = NULL;
-    double e = 0.0, u = 0.0, u_max =0.0;
+    double e = 0, u_max = 0, d0 = 0, qp = 0, *d0u = NULL;
     double Rmax = 0, Rmin = 0, Rstep, step, RATE;
-    double max_rate = 0.0, min_rate = 0.0;
+    double max_rate = 0, min_rate = 0;
     double *env = (double *) malloc(sizeof(double) * num_seg);
-    double arr[100][2];
+    double arr[num_vd][num_rate][4];
+
+    char file_one_video[1024] = "./data_final/adapt_1vd_result.csv";
+    FILE *fd = fopen(file_one_video, "w");
+    fprintf(fd, "VIDEO, Rate, Utility, d0, QP\n");
     /*Load data*/
     for (int i = 0; i < 2; i++) {
-        printf("===video[%d]: %s===\n", i, ls_vd[i].vd_name);
-        Rmax = max_rate = find_max_rate(ls_vd[i].ls_qpvd[0].ls_rate);
-        Rmin = min_rate = find_min_rate(ls_vd[i].ls_qpvd[num_qp-1].ls_rate);
+
+        Rmin = find_min_rate(ls_vd[i].ls_qpvd[num_qp-1].ls_rate);
+        Rmax = find_max_rate(ls_vd[i].ls_qpvd[0].ls_rate);
+        
         //printf("Rmin = %f\tRmax = %f\n", Rmin, Rmax);
-        Rstep = (Rmax - Rmin)/10;
+        Rstep = (Rmax - Rmin)/num_rate;
+        min_rate = Rmin;
+        max_rate = Rmax;
         e = min_rate;
         RATE = Rmin;
         step = (max_rate - min_rate)/250;
-        for (int j = 0; j < 10; j++){
+        for (int j = 0; j < num_rate; j++){
             e = min_rate;
-            //printf("max_rate %f\n", max_rate);
-            //printf("RATE =========== %f", RATE);
             while (e <= Rmax) {
                 ls_adapt = pick_adapt_R(e, ls_vd[i].ls_qpvd);
                 env = env_data(ls_adapt->ls_rate); 
                 //printf("----------e = %f\n",e);
-                u = calculate_U(env,ls_adapt->qp, RATE);
-                u_max = (u_max > u) ? u_max : u;
+                d0u = calculate_U1(env,ls_adapt->qp, RATE);
+                if (u_max < d0u[1]) {
+                    u_max = d0u[1];
+                    d0 = d0u[0];
+                    qp = ls_adapt->qp; 
+                }
                 e += step;
             }
-            arr[j][0] = RATE;
-            arr[j][1] = u_max;
+            arr[i][j][0] = RATE;
+            arr[i][j][1] = u_max;
+            arr[i][j][2] = d0;
+            arr[i][j][3] = qp;
             RATE += Rstep;
+            d0 = 0;
             u_max = 0;
         }
-        for (int k = 0; k < 10; k++) {
-        printf("R = %f\tU = %f\n", arr[k][0], arr[k][1]);
-        }
     }
+    for (int i = 0; i < 2; i++) {
+        printf("VIDEO: %s\n", ls_vd[i].vd_name);
+        fprintf(fd, "%s", ls_vd[i].vd_name);
+        for (int k = 0; k < num_rate; k++) {
+            printf("R = %f\tU = %f \t d0 = %f\t qp = %f\n", arr[i][k][0], arr[i][k][1], 
+                                                            arr[i][k][2], arr[i][k][3]);
+            fprintf(fd, ",%f, %f, %f, %f\n", arr[i][k][0], arr[i][k][1],
+                                            arr[i][k][2], arr[i][k][3]);
+            //fprintf(fd, ",");
+        }
+        fprintf(fd, "\n");
+    }
+
+    /* NO ADAPTIVE MODE */
+
     
+
 #endif
 
 #ifdef _DEBUG_
@@ -95,10 +122,13 @@ int main(int arg, char **argv)
     double max_rate = 0.0, min_rate = 0.0;
     double *env = (double *) malloc(sizeof(double) * num_seg);
     node *tmp = (node *) malloc(sizeof(node)); 
-    
-
     double arr[num_vd][num_rate][2];
     int select[num_vd];
+
+    FILE *fd = NULL;
+    char final_file[1024] = "final_result.csv";
+    fd = fopen(final_file, "w");
+    fprintf(fd, "BandWidth, Video name, Rate, Utility,\n");
     /*Load data*/
     for (int i = 0; i < num_vd; i++) {
         Rmin = find_min_rate(ls_vd[i].ls_qpvd[num_qp - 1].ls_rate);
@@ -135,7 +165,6 @@ int main(int arg, char **argv)
     heap *h = NULL;
 
     for (BW = 3000; BW <= 15000;) {
-    //printf("tmp->rate = %f\n", tmp->rate);
         h = h_init(num_vd);
         sumR = 0;
         for (int i = 0; i < num_vd; i++) {
@@ -161,24 +190,26 @@ int main(int arg, char **argv)
                 tmp->alpha = (arr[tmp->vd_id][tmp->rt_id + 1][1] - tmp->U)/
                              (arr[tmp->vd_id][tmp->rt_id + 1][0] - tmp->rate);
                 hpush(h, tmp);
-                if (BW == 4000) print_heap(h);
             } else break;
         }
         sumR = 0;
         printf("=============BW: %f===============\n", BW);
+        fprintf(fd, "%f, ", BW);
         for (int i = 0; i < num_vd; i++) {
             printf("VIDEO: %s\t, rate: %f\t, U: %f\n", ls_vd[i].vd_name,
                                                        arr[i][select[i]][0],
                                                        arr[i][select[i]][1]);
+            fprintf(fd, "%s, %f, %f,\n", ls_vd[i].vd_name,
+                                          arr[i][select[i]][0],
+                                          arr[i][select[i]][1]);
+            fprintf(fd, " ,");
             sumR += arr[i][select[i]][0];
         }
         printf("SUM RATE: %f\n", sumR);
+        fprintf(fd, "SUM RATE, %f\n\n", sumR);
         BW += 1000;
         h_free(h);
     }
-    
-    
-    
 #endif
 
 #ifdef _FIND_BW_

@@ -16,7 +16,8 @@ void print_acc_data(const char *file_name, VIDEOS *ls_vd);
 /* Tao duong bao du lieu */
 double *env_data(double *ls_dt);
 
-double calculate_U(double *ls_env,double qp_avg, double R);
+double *calculate_U1(double *ls_env,double qp_avg, double R);
+double calculate_U(double *ls_env, double qp_avg, double R);
 
 /* Tim bang thong thap nhat cap cho video co muc chat luong
    thap nhat co the choi voi do tre lon nhat*/
