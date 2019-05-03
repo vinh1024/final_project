@@ -34,7 +34,12 @@ static unsigned int num_seg = MAX_NUM_OF_SEGMENTS;
 
 #define VIDEOS struct LIST_QP_VIDEO
 
-
+struct point {
+	double rate;
+	double qp;
+	double utility;
+	double d0;
+};
 //static struct VIDEO *ls_vd = NULL;
 
 /* Ham khoi tao list video */

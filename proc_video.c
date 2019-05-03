@@ -160,7 +160,7 @@ double calculate_U(double *ls_env, double qp_avg, double R)
     if (d0 >= 0 && d0 < 1) {
         Uq = -0.172 * qp_avg + 9.249;
         Ud = -0.862 * log((d0 + 6.718)) + 5;
-        printf("QP = %f\t\td0 = %f\t U = %f\n", qp_avg, d0, (0.8*Uq + 0.2*Ud));
+        //printf("QP = %f\t\td0 = %f\t U = %f\n", qp_avg, d0, (0.8*Uq + 0.2*Ud));
         return 0.8 * Uq + 0.2 * Ud;
     }
     return 0;
@@ -188,4 +188,51 @@ double find_max_rate(double *ls_vd)
     }
     //printf("Find maximum rate done!\n");
     return max_r;
+}
+
+void full_search(struct point d[5][20], int n, double BW) {
+    double sumbw = 0, sumU = 0;
+    double best_sumbw = 0, best_sumU = 0;
+    int select[num_vd];
+
+    for (int i0 = 0; i0 < n; i0++) {
+        sumbw += d[0][i0].rate;
+        for (int i1 = 0; i1 < n; i1++) {
+            sumbw += d[1][i1].rate;
+            for (int i2 = 0; i2 < n; i2++) {
+                sumbw += d[2][i2].rate;
+                for (int i3 = 0; i3 < n; i3++) {
+                    sumbw += d[3][i3].rate;
+                    for (int i4 = 0; i4 < n; i4++) {
+                        sumbw += d[4][i4].rate;
+                        if (sumbw < BW) {
+                            sumU =  d[0][i0].utility + d[1][i1].utility + d[2][i2].utility
+                                  + d[3][i3].utility + d[4][i4].utility;
+                            if (sumU > best_sumU || (sumU == best_sumU && sumbw < best_sumbw)) {
+                                best_sumbw = sumbw;
+                                best_sumU = sumU;
+                                select[0] = i0;
+                                select[1] = i1;
+                                select[2] = i2;
+                                select[3] = i3;
+                                select[4] = i4;
+                            }
+                        }
+                        sumbw -= d[4][i4].rate;
+                    }
+                    sumbw -= d[3][i3].rate;
+                }
+                sumbw -= d[2][i2].rate;
+            }
+            sumbw -= d[1][i1].rate;
+        }
+        sumbw -= d[0][i0].rate;
+    }
+    double sumR = 0;
+    for (int i = 0; i < num_vd; i++) {
+        printf("VIDEO[%d]:\tR[%d]: %f,\tU: %f\n", i,select[i], d[i][select[i]].rate,
+                                            d[i][select[i]].utility);
+        sumR += d[i][select[i]].rate;
+    }
+    printf("SUM RATE: %f\n", sumR);
 }

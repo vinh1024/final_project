@@ -26,4 +26,6 @@ double find_min_rate(double *ls_env_minqp);
 /* Tim bang thong cao nhat cap cho video co muc chat luong cao nhat
    co the choi voi do tre bang 0 */
 double find_max_rate(double *ls_env_maxqp);
+
+void full_search(struct point d[5][20], int n, double BW);
 #endif
