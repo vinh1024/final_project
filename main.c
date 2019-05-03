@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 #define _PARAM_
 #include "video.h"
 #include "standio.h"
@@ -37,8 +38,7 @@ int main(int arg, char **argv)
 
         Rmin = find_min_rate(ls_vd[i].ls_qpvd[num_qp-1].ls_rate);
         Rmax = find_max_rate(ls_vd[i].ls_qpvd[0].ls_rate);
-        
-        //printf("Rmin = %f\tRmax = %f\n", Rmin, Rmax);
+
         Rstep = (Rmax - Rmin)/num_rate;
         min_rate = Rmin;
         max_rate = Rmax;
@@ -49,8 +49,7 @@ int main(int arg, char **argv)
             e = min_rate;
             while (e <= Rmax) {
                 ls_adapt = pick_adapt_R(e, ls_vd[i].ls_qpvd);
-                env = env_data(ls_adapt->ls_rate); 
-                //printf("----------e = %f\n",e);
+                env = env_data(ls_adapt->ls_rate);
                 d0u = calculate_U1(env,ls_adapt->qp, RATE);
                 if (u_max < d0u[1]) {
                     u_max = d0u[1];
@@ -76,7 +75,6 @@ int main(int arg, char **argv)
                                                             data[i][k].d0, data[i][k].qp);
             fprintf(fd, ",%f, %f, %f, %f\n", data[i][k].rate, data[i][k].utility,
                                             data[i][k].d0, data[i][k].qp);
-            //fprintf(fd, ",");
         }
         fprintf(fd, "\n");
     }
@@ -96,17 +94,14 @@ int main(int arg, char **argv)
         
         for (int j = 0; j < num_rate; j++){
             for (int q = 0; q < num_qp; q++) {
-                env = env_data(ls_vd[i].ls_qpvd[q].ls_rate); 
-                //printf("----------e = %f\n",e);
+                env = env_data(ls_vd[i].ls_qpvd[q].ls_rate);
                 d0u = calculate_U1(env,ls_vd[i].ls_qpvd[q].qp , RATE);
-                //printf("d0: %f, u: %f\n", d0u[0], d0u[1]);
                 if (u_max < d0u[1]) {
                     u_max = d0u[1];
                     d0 = d0u[0];
                     qp = ls_vd[i].ls_qpvd[q].qp;
                 }
             }
-            //printf("==========\n");
             data[i][j].rate = RATE;
             data[i][j].utility = u_max;
             data[i][j].d0 = d0;
@@ -169,14 +164,14 @@ int main(int arg, char **argv)
     double Rmax = 0, Rmin = 0, Rstep, step, RATE;
     double max_rate = 0.0, min_rate = 0.0;
     double *env = (double *) malloc(sizeof(double) * num_seg);
-    node *tmp = (node *) malloc(sizeof(node)); 
     struct point data[num_vd][num_rate];
-    int select[num_vd];
+
+    int *select = (int *) malloc(sizeof(int) * num_vd);
 
     FILE *fd = NULL;
     char final_file[1024] = "final_result.csv";
     fd = fopen(final_file, "w");
-    fprintf(fd, "BandWidth, Video name, Rate, Utility,\n");
+    
     
     for (int i = 0; i < num_vd; i++) {
         Rmin = find_min_rate(ls_vd[i].ls_qpvd[num_qp - 1].ls_rate);
@@ -209,63 +204,35 @@ int main(int arg, char **argv)
             printf("R = %f\tU = %f\n", data[i][k].rate, data[i][k].utility);
         }
     }
-    double sumR = 0, BW = 3000, old_rate;
-    heap *h = NULL;
+    double BW = 3000;
+    double start, end;
 
-    for (BW = 4000; BW <= 15000;) {
-        h = h_init(num_vd);
-        sumR = 0;
-        for (int i = 0; i < num_vd; i++) {
-            tmp->rate = data[i][0].rate;
-            tmp->U = data[i][0].utility;
-            tmp->alpha = (data[i][1].utility - data[i][0].utility)/(data[i][1].rate - data[i][0].rate);
-            tmp->vd_id = i;
-            tmp->rt_id = 0;
-            hpush(h, tmp);
-            sumR += tmp->rate;
-        }
-        //if (BW == 4000) print_heap(h);
-        printf("SumR = %f\n", sumR);
-        while ((h->size > 0)) {
-            tmp = hpop_peak(h);
-            old_rate = tmp->rate;
-            tmp->rate = data[tmp->vd_id][tmp->rt_id].rate;
-            sumR = sumR + tmp->rate - old_rate;
-            if (sumR <= BW) {
-                select[tmp->vd_id] = tmp->rt_id;
-                tmp->U = data[tmp->vd_id][tmp->rt_id].utility;
-                tmp->rt_id += 1;
-                tmp->alpha = (data[tmp->vd_id][tmp->rt_id + 1].utility - tmp->U)/
-                             (data[tmp->vd_id][tmp->rt_id + 1].rate - tmp->rate);
-                hpush(h, tmp);
-            } else break;
-        }
-        sumR = 0;
-        //printf("=============BW: %f===============\n", BW);
-        fprintf(fd, "%f, ", BW);
-        for (int i = 0; i < num_vd; i++) {
-            printf("VIDEO: %s\t, rate: %f\t, U: %f\n", ls_vd[i].vd_name,
-                                                       data[i][select[i]].rate,
-                                                       data[i][select[i]].utility);
-            fprintf(fd, "%s, %f, %f,\n", ls_vd[i].vd_name,
-                                          data[i][select[i]].rate,
-                                          data[i][select[i]].utility);
-            fprintf(fd, " ,");
-            sumR += data[i][select[i]].rate;
-        }
-        printf("SUM RATE: %f\n", sumR);
-        fprintf(fd, "SUM RATE, %f\n\n", sumR);
-        printf("=====================Full search ===================\n");
-        full_search(data, num_rate, BW);
-        printf("====================================================\n");
+    fprintf(fd, "BandWidth, Algorithm, Video name, Rate, Utility,\n");
+    for (BW = 3000; BW <= 15000;) {
+        fprintf(fd, "%f, Fast heap", BW);
+        printf("_____________________Fast heap______________________\n");
+        start = clock();
+        fast_heap(data, BW, select);
+        end = clock();
+        printf("TIME: %f\n", (end - start)/CLOCKS_PER_SEC);
+        print_result(ls_vd, data, fd, select);
+        fprintf(fd, ",,TIME, %f\n\n", (end - start)/CLOCKS_PER_SEC);
+        printf("\n\n");
+
+
+        printf("_____________________Full search____________________\n");
+        fprintf(fd, ", Full search");
+        start = clock();
+        full_search(data, num_rate, BW, select);
+        end = clock();
+        printf("TIME: %f\n", (end - start)/CLOCKS_PER_SEC);
+        print_result(ls_vd, data, fd, select);
+        fprintf(fd, ",,TIME, %f\n\n", (end - start)/CLOCKS_PER_SEC);
+        printf("\n\n");
+
         BW += 1000;
-        h_free(h);
     }
-
-
-    /* Full search */
-
-    
+    fclose(fd);
 
 #endif
 

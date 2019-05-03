@@ -12,5 +12,9 @@ void print_data(const char *filename, VIDEOS *ls_vd,
                 unsigned int num_vd, unsigned int num_seg, unsigned int num_qp);
 
 void print_list_rate(const char *file_name, double *ls_rate);
+
+void print_result(VIDEOS *ls_vd, struct point d[5][20], FILE *fd, int *select);
+
+
 #endif
 

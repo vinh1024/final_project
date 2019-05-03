@@ -105,3 +105,24 @@ void print_list_rate(const char *file_name, double *ls_rate)
     printf("\n");
     fclose(fd);
 }
+
+void print_result(VIDEOS *ls_vd, struct point d[5][20], FILE *fd, int *select) {
+    double bw_use = 0;
+    double sum_u = 0;
+    for (int i = 0; i < num_vd; i++) {
+        printf("VIDEO: %10s,\trate: %f,\tU: %f\n", ls_vd[i].vd_name,
+                                                   d[i][select[i]].rate,
+                                                   d[i][select[i]].utility);
+
+        fprintf(fd, ",%s, %f, %f,\n", ls_vd[i].vd_name,
+                                      d[i][select[i]].rate,
+                                      d[i][select[i]].utility);
+        fprintf(fd, ",");
+        bw_use += d[i][select[i]].rate;
+        sum_u += d[i][select[i]].utility;
+    }
+    printf("U_avg  : %f\n", sum_u/num_vd);
+    printf("SUM_BW : %f\n", bw_use);
+    fprintf(fd, ",U_avg, %f\n"
+                ",,SUM_BW, %f\n", sum_u/num_vd, bw_use);
+}

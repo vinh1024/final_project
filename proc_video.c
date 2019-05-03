@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <math.h>
+
+#include "heap.h"
 #include "proc_video.h"
 #include "standio.h"
 
@@ -186,30 +188,30 @@ double find_max_rate(double *ls_vd)
         R = ls_env_maxqp[i]/(i * T);
         max_r = (max_r < R) ? R : max_r;
     }
-    //printf("Find maximum rate done!\n");
     return max_r;
 }
 
-void full_search(struct point d[5][20], int n, double BW) {
-    double sumbw = 0, sumU = 0;
+void full_search(struct point d[5][20], int n, double BW, 
+                            int *select) 
+{
+    double sumU = 0, bw_use = 0;
     double best_sumbw = 0, best_sumU = 0;
-    int select[num_vd];
 
     for (int i0 = 0; i0 < n; i0++) {
-        sumbw += d[0][i0].rate;
+        bw_use += d[0][i0].rate;
         for (int i1 = 0; i1 < n; i1++) {
-            sumbw += d[1][i1].rate;
+            bw_use += d[1][i1].rate;
             for (int i2 = 0; i2 < n; i2++) {
-                sumbw += d[2][i2].rate;
+                bw_use += d[2][i2].rate;
                 for (int i3 = 0; i3 < n; i3++) {
-                    sumbw += d[3][i3].rate;
+                    bw_use += d[3][i3].rate;
                     for (int i4 = 0; i4 < n; i4++) {
-                        sumbw += d[4][i4].rate;
-                        if (sumbw < BW) {
+                        bw_use += d[4][i4].rate;
+                        if (bw_use < BW) {
                             sumU =  d[0][i0].utility + d[1][i1].utility + d[2][i2].utility
                                   + d[3][i3].utility + d[4][i4].utility;
-                            if (sumU > best_sumU || (sumU == best_sumU && sumbw < best_sumbw)) {
-                                best_sumbw = sumbw;
+                            if (sumU > best_sumU || (sumU == best_sumU && bw_use < best_sumbw)) {
+                                best_sumbw = bw_use;
                                 best_sumU = sumU;
                                 select[0] = i0;
                                 select[1] = i1;
@@ -218,21 +220,49 @@ void full_search(struct point d[5][20], int n, double BW) {
                                 select[4] = i4;
                             }
                         }
-                        sumbw -= d[4][i4].rate;
+                        bw_use -= d[4][i4].rate;
                     }
-                    sumbw -= d[3][i3].rate;
+                    bw_use -= d[3][i3].rate;
                 }
-                sumbw -= d[2][i2].rate;
+                bw_use -= d[2][i2].rate;
             }
-            sumbw -= d[1][i1].rate;
+           bw_use -= d[1][i1].rate;
         }
-        sumbw -= d[0][i0].rate;
+        bw_use -= d[0][i0].rate;
     }
-    double sumR = 0;
-    for (int i = 0; i < num_vd; i++) {
-        printf("VIDEO[%d]:\tR[%d]: %f,\tU: %f\n", i,select[i], d[i][select[i]].rate,
-                                            d[i][select[i]].utility);
-        sumR += d[i][select[i]].rate;
-    }
-    printf("SUM RATE: %f\n", sumR);
 }
+
+void fast_heap(struct point d[5][20], double BW, int *select) 
+{
+    heap *h = h_init(num_vd);
+    double old_rate, bw_use = 0;
+    node *tmp = (node *) malloc(sizeof(node));
+
+    for (int i = 0; i < num_vd; i++) {
+        tmp->rate = d[i][0].rate;
+        tmp->U = d[i][0].utility;
+        tmp->alpha = (d[i][1].utility - d[i][0].utility)/
+                        (d[i][1].rate - d[i][0].rate);
+        tmp->vd_id = i;
+        tmp->rt_id = 0;
+        hpush(h, tmp);
+        bw_use += tmp->rate;
+    }
+    while ((h->size > 0)) {
+        tmp = hpop_peak(h);
+        old_rate = tmp->rate;
+        tmp->rate = d[tmp->vd_id][tmp->rt_id].rate;
+        bw_use = bw_use + tmp->rate - old_rate;
+        if (bw_use <= BW) {
+            select[tmp->vd_id] = tmp->rt_id;
+            tmp->U = d[tmp->vd_id][tmp->rt_id].utility;
+            tmp->rt_id += 1;
+            tmp->alpha = (d[tmp->vd_id][tmp->rt_id + 1].utility - tmp->U)/
+                         (d[tmp->vd_id][tmp->rt_id + 1].rate - tmp->rate);
+            hpush(h, tmp);
+        } else break;
+    }
+    free(tmp);
+    h_free(h);
+}
+

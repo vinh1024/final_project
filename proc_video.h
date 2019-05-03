@@ -27,5 +27,7 @@ double find_min_rate(double *ls_env_minqp);
    co the choi voi do tre bang 0 */
 double find_max_rate(double *ls_env_maxqp);
 
-void full_search(struct point d[5][20], int n, double BW);
+void full_search(struct point d[5][20], int n, double BW, int *select);
+
+void fast_heap(struct point d[5][20], double BW, int *select);
 #endif
