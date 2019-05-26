@@ -7,8 +7,16 @@
 #include "proc_video.h"
 #include "standio.h"
 
-
+#define printd(str) printf("%s\n", str);
 #define d0max (0.5)
+#define uthrs (0.09)
+double bw_use, best_sumbw, best_sumU;
+double sum_u;
+static int index[20];
+//static int index[20] = {0};
+struct point data[num_vd][num_rate];
+int sl[num_vd];
+double BW;
 
 QPVD *pick_adapt_R(double e, QPVD *ls_qpvd)
 {
@@ -115,14 +123,6 @@ double *env_data(double *ls_dt)
     }
     return ls_env;
 }
-/* D[k] = D[k] + R[i+k]
-    i = 0, k = 0: D[0] = D[0] + R[0]  (D[0] = R[0])
-    i = 0, k = 1: D[1] = D[1] + R[1]  (D[1] = R[1])
-    i = 0, ....
-    i = 1, k = 0: D[0] = D[0] + R[1]  (D[0] = R[0] + R[1])
-    i = 1, k = 1: D[1] = D[0] + R[2]  (D[1] = R[1] + R[2])
-    i = 1, k = 292:                    D[292] = R[292] + R[293]
-*/
 
 double *calculate_U1(double *ls_env, double qp_avg, double R)
 {
@@ -266,3 +266,146 @@ void fast_heap(struct point d[5][20], double BW, int *select)
     h_free(h);
 }
 
+void search(int i)
+{
+    if (bw_use > BW)
+        return;
+    else {
+        if (i == num_vd) {
+            if ((sum_u > best_sumU) || ((sum_u == best_sumU) && bw_use < best_sumbw)) {
+                best_sumbw = bw_use;
+                best_sumU = sum_u;
+                for (int j = 0; j < 20; j++) {
+                    sl[j] = index[j];
+                }
+            }
+        } else {
+            for (int j = 0; j < 20; j++) {
+                index[i] = j;
+                bw_use += data[i][j].rate;
+                sum_u += data[i][j].utility;
+                search(i+1);
+                bw_use -= data[i][j].rate;
+                sum_u -= data[i][j].utility;
+            }
+        }
+    }
+}
+
+void accurate_algorithm(int *select)
+{
+    sum_u = 0;
+    best_sumbw = 0;
+    best_sumU = 0;
+    bw_use = 0;
+    
+    for (int i = 0; i < 20; i++) {
+        index[i] = 0;
+        sl[i] = -1;
+    }
+    search(0);
+    for (int i = 0; i < 20; i++) {
+        select[i] = sl[i];
+    }
+}
+
+void lagrange_algorithm(struct point d[5][20], double BW, int *select)
+{
+    int first_ind[num_vd];
+    int mid_ind[num_vd];
+    int last_ind[num_vd];
+    int temp = 0;
+    double use_bw;
+    double minSlop = 0, maxSlop = 1, /*M_PI/2,*/ nextSlop;
+    bool exit;
+    bool p = false;
+
+    for (int i = 0; i < num_vd; i++) {
+        last_ind[i] = 20;
+        mid_ind[i] = 0;
+        first_ind[i] = 0;
+    }
+    while (true) {
+        if (p == true) break;
+        use_bw = 0;
+        nextSlop = (minSlop + maxSlop)/2;
+        for (int i = 0; i < num_vd; i++) {
+            double uLagrange = -1;
+
+            if (first_ind[i] == last_ind[i]) {
+                use_bw += d[i][mid_ind[i]].rate;
+                continue;
+            }
+            for (int j = 0; j < 20; j++) {
+                if (d[i][j].utility - (nextSlop) * (d[i][j].rate) > uLagrange) {
+                    uLagrange = d[i][j].utility - (nextSlop) * (d[i][j].rate);
+                    if (p == false) 
+                        /*printf("i: %d, j: %d\tuL = u - h.R \t %f = %f - %f * %f\n"
+                        , i, j, uLagrange, d[i][j].utility, nextSlop, d[i][j].rate);
+                        if (uLagrange > d[i][j+1].utility - nextSlop*d[i][j+1].rate)
+                            printf("========:i: %d, j: %d\tuL = u - h.R \t %f = %f - %f * %f\n"
+                            , i, j, (d[i][j+1].utility - nextSlop*d[i][j+1].rate), 
+                            d[i][j+1].utility, nextSlop, d[i][j+1].rate);*/
+                    mid_ind[i] = j;
+                }
+            }
+            //printf("\n\n");
+            use_bw += d[i][mid_ind[i]].rate;
+        }
+        /*printf("---------------------------\n");
+        printf("last_ind: [%d], [%d], [%d], [%d], [%d]\n", last_ind[0],
+            last_ind[1],
+            last_ind[2],
+            last_ind[3],
+            last_ind[4]);
+        printf("mid_ind : [%d], [%d], [%d], [%d], [%d]\n", mid_ind[0],
+            mid_ind[1],
+            mid_ind[2],
+            mid_ind[3],
+            mid_ind[4]);
+        printf("firt_ind: [%d], [%d], [%d], [%d], [%d]\n", first_ind[0],
+            first_ind[1],
+            first_ind[2],       
+            first_ind[3],
+            first_ind[4]);
+        printf("BW: %f\n", use_bw);*/
+
+        if (use_bw == BW) {
+            for (int i = 0; i < num_vd; i++) {
+                select[i] = mid_ind[i];
+            }
+            break;
+        } else if (use_bw < BW) {
+            for (int i = 0; i < num_vd; i++) {
+                first_ind[i] = mid_ind[i];
+            }
+            //printf("use_bw < BW-----maxSlop (%f) = nextSlop (%f), minSlop: %f\n", maxSlop, nextSlop, minSlop);
+            maxSlop = nextSlop;
+
+        } else if (use_bw > BW) {
+            for (int i = 0; i < num_vd; i++) {
+                last_ind[i] = mid_ind[i];
+            }
+            //printf("use_bw < BW====minSlop (%f) = nextSlop (%f), maxSlop: %f\n", minSlop, nextSlop, maxSlop);
+            minSlop = nextSlop;
+        }
+        temp = 0;
+        for (int i = 0; i < num_vd; i++) {
+            temp += last_ind[i] - first_ind[i];
+        }
+        exit = true;
+        for (int i = 0; i < num_vd; i++) {
+            if (first_ind[i] != mid_ind[i] && last_ind[i] != mid_ind[i]) {
+                exit = false;
+                break;
+            }
+        }
+        if (exit && (temp < num_vd) && use_bw < BW) {
+            for(int i = 0; i < num_vd; i++) {
+                select[i] = first_ind[i];
+            }
+            printf("BW use: %f\n", use_bw);
+            break;
+        }
+    }
+}

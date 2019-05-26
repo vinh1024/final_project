@@ -6,6 +6,8 @@
 #include "standio.h"
 
 /* Thich ung chat luong video*/
+extern struct point data[num_vd][num_rate];
+extern double BW;
 QPVD *pick_adapt_R(double e, QPVD *ls_qpvd);
 
 /* Tao cac diem du lieu tich luy */
@@ -30,4 +32,11 @@ double find_max_rate(double *ls_env_maxqp);
 void full_search(struct point d[5][20], int n, double BW, int *select);
 
 void fast_heap(struct point d[5][20], double BW, int *select);
+
+void search(int i);
+
+void accurate_algorithm(int *select);
+
+void lagrange_algorithm(struct point d[5][20], double BW, int *select);
+
 #endif

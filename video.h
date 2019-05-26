@@ -3,12 +3,13 @@
 
 
 #define MAXCHAR 100
-#define NUM_VIDEO 5
-#define MAX_NUM_OF_SEGMENTS 294
 #define MAX_PATH_LEN 256
-#define NUM_QP 6
 #define INIT_QP 1
 #define T (2)                   //thoi gian cua mot segment
+#define num_qp (6)
+#define num_vd (5)
+#define num_seg (294)
+#define num_rate (20)
 #ifndef _PARAM_
 static unsigned int QUANTIZIATION_PARAMS[] = {22, 28, 34, 38, 42, 48};
 static char *VIDEO_NAME[10] = {"lam", "sony", "star", "terminate", "tokyo"};
@@ -26,11 +27,7 @@ struct LIST_QP_VIDEO {
     char *vd_name;
 };
 
-static unsigned int num_qp = NUM_QP;
-#ifndef _NUM_VD_
-static unsigned int num_vd = NUM_VIDEO;
-#endif
-static unsigned int num_seg = MAX_NUM_OF_SEGMENTS;
+
 
 #define VIDEOS struct LIST_QP_VIDEO
 

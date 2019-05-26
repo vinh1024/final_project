@@ -2,25 +2,32 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <pthread.h>
+
 #define _PARAM_
 #include "video.h"
 #include "standio.h"
 #include "proc_video.h"
 #include "heap.h"
-#define num_rate (20)
-//#define _ONE_VIDEO_
-//#define _DEBUG_
-#define _MAIN_
-//#define _FIND_BW_
+
+//#define ONE_VIDEO
+//#define DEBUG
+#define MAIN
+//#define FIND_BW
+static FILE* fd = NULL;
+#ifdef MAIN 
+#define ALGORITHM_NAME(algorithm) \
+    printf("______________%s_______________\n", algorithm);
+#endif
 
 const char *file_data = "./VBR_video_bitrate/";
-
+struct point data[num_vd][num_rate];
 int main(int arg, char **argv)
 {
     VIDEOS *ls_vd = NULL;
     ls_vd = load_data(file_data);
 
-#ifdef _ONE_VIDEO_
+#ifdef ONE_VIDEO
     
     /* ADAPTIVE MODE */
     QPVD *ls_adapt = NULL;
@@ -130,7 +137,7 @@ int main(int arg, char **argv)
 
 #endif
 
-#ifdef _DEBUG_
+#ifdef DEBUG
     double *acc = NULL;
     double *env = NULL;
     QPVD *adapt_data = NULL;
@@ -158,19 +165,19 @@ int main(int arg, char **argv)
     printf("U = %f\n", u);
 #endif
 
-#ifdef _MAIN_
+#ifdef MAIN
     QPVD *ls_adapt = NULL;
     double e = 0.0, u = 0.0, u_max =0.0;
     double Rmax = 0, Rmin = 0, Rstep, step, RATE;
     double max_rate = 0.0, min_rate = 0.0;
     double *env = (double *) malloc(sizeof(double) * num_seg);
-    struct point data[num_vd][num_rate];
+    
 
     int *select = (int *) malloc(sizeof(int) * num_vd);
 
-    FILE *fd = NULL;
+    //FILE *fd = NULL;
     char final_file[1024] = "final_result.csv";
-    fd = fopen(final_file, "w");
+    
     
     
     for (int i = 0; i < num_vd; i++) {
@@ -204,46 +211,69 @@ int main(int arg, char **argv)
             printf("R = %f\tU = %f\n", data[i][k].rate, data[i][k].utility);
         }
     }
+    free(env);
+    free(ls_adapt->ls_rate);
+
     double BW = 3000;
     double start, end;
+    //double sumbw =0;
+    //fd = fopen("accurate_alogrithm.txt", "w");
+    fd = fopen(final_file, "w");
+    int *result = (int *) malloc(sizeof(int) * num_vd);
+    
+    for (BW = 4000; BW <= 4000;) {
+        fprintf(fd, "BandWidth, Algorithm, Video name, Rate, Utility,\n");
+        //fprintf(fd, ",BandWidth, Algorithm, Video name, Rate, Utility,\n");
+        printf("===============\tBW = %f\t=================\n", BW);
 
-    fprintf(fd, "BandWidth, Algorithm, Video name, Rate, Utility,\n");
-    for (BW = 3000; BW <= 15000;) {
-        fprintf(fd, "%f, Fast heap", BW);
         printf("_____________________Fast heap______________________\n");
+        fprintf(fd, "%f, Fast heap", BW);
         start = clock();
         fast_heap(data, BW, select);
         end = clock();
-        printf("TIME: %f\n", (end - start)/CLOCKS_PER_SEC);
         print_result(ls_vd, data, fd, select);
         fprintf(fd, ",,TIME, %f\n\n", (end - start)/CLOCKS_PER_SEC);
         printf("\n\n");
-
 
         printf("_____________________Full search____________________\n");
         fprintf(fd, ", Full search");
         start = clock();
         full_search(data, num_rate, BW, select);
         end = clock();
-        printf("TIME: %f\n", (end - start)/CLOCKS_PER_SEC);
         print_result(ls_vd, data, fd, select);
         fprintf(fd, ",,TIME, %f\n\n", (end - start)/CLOCKS_PER_SEC);
         printf("\n\n");
 
+
+        printf("_____________________Lagrange Algorithm_____________\n");
+        fprintf(fd, ", Lagrange Algorithm");
+        start = clock();
+        lagrange_algorithm(data, BW, select);
+        end = clock();
+        print_result(ls_vd, data, fd, select);
+        fprintf(fd, ",,TIME, %f\n\n", (end - start)/CLOCKS_PER_SEC);
+        printf("\n\n");
+        
         BW += 1000;
     }
+
     fclose(fd);
-
-#endif
-
-#ifdef _FIND_BW_
-    double MINR[num_vd], MAXR[num_vd];
-    
-    for (int i = 0; i < num_vd; i++) {
-        MINR[i] = find_min_rate(ls_vd[i].ls_qpvd[num_qp - 1].ls_rate);
-        MAXR[i] = find_max_rate(ls_vd[i].ls_qpvd[0].ls_rate);
-        printf("%s video:\t\t MIN RATE %f\t MAX RATE: %f\n", ls_vd[i].vd_name, MINR[i], MAXR[i]);
+    FILE *fd1 = fopen("al.csv", "w");
+    for (int BW = 3000; BW <= 4000;) {
+        printf("_____________________Accurate Algorithm_____________\n");
+        fprintf(fd1, ", Accurate Algorithm");
+        
+        start = clock();
+        accurate_algorithm(result);
+        end = clock();
+        print_result(ls_vd, data, fd1, result);
+        fprintf(fd1, ",,TIME, %f\n\n", (end - start)/CLOCKS_PER_SEC);
+        printf("\n\n");
+        BW += 1000;
     }
+    //fclose(fd1);
+
+
 #endif
     return 0;
 }

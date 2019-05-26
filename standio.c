@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "standio.h"
-#include "video.h"
+
 
 VIDEOS *load_data(const char *data_dir) 
 {
@@ -50,8 +50,7 @@ VIDEOS *load_data(const char *data_dir)
     return ls_vd;
 }
 
-void print_data(const char *filename, VIDEOS *ls_vd, 
-                unsigned int n_vd, unsigned int n_seg, unsigned int n_qp) 
+void print_data(const char *filename, VIDEOS *ls_vd) 
 {
     FILE *fd = fopen(filename, "w");
 
@@ -109,6 +108,7 @@ void print_list_rate(const char *file_name, double *ls_rate)
 void print_result(VIDEOS *ls_vd, struct point d[5][20], FILE *fd, int *select) {
     double bw_use = 0;
     double sum_u = 0;
+
     for (int i = 0; i < num_vd; i++) {
         printf("VIDEO: %10s,\trate: %f,\tU: %f\n", ls_vd[i].vd_name,
                                                    d[i][select[i]].rate,
@@ -121,8 +121,9 @@ void print_result(VIDEOS *ls_vd, struct point d[5][20], FILE *fd, int *select) {
         bw_use += d[i][select[i]].rate;
         sum_u += d[i][select[i]].utility;
     }
-    printf("U_avg  : %f\n", sum_u/num_vd);
-    printf("SUM_BW : %f\n", bw_use);
+
+    printf("\n\tU_avg  : %f\n", sum_u/num_vd);
+    printf("\tSUM_BW : %f\n", bw_use);
     fprintf(fd, ",U_avg, %f\n"
                 ",,SUM_BW, %f\n", sum_u/num_vd, bw_use);
 }
