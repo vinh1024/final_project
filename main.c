@@ -133,6 +133,36 @@ int main(int arg, char **argv)
         }
         fprintf(fd, "\n");
     }
+    
+
+    for (int i = 0; i < num_vd; i++) {
+        Rmin = find_min_rate(ls_vd[i].ls_qpvd[num_qp-1].ls_rate);
+        Rmax = find_max_rate(ls_vd[i].ls_qpvd[0].ls_rate);
+
+        Rstep = (Rmax - Rmin)/num_rate;
+        RATE = Rmin;
+        for (int j = 0; j < num_rate; j++){
+            ls_adapt = pick_adapt_R(RATE, ls_vd[i].ls_qpvd);
+            
+            data[i][j].rate = RATE;
+            u_max =  0.8 * (-0.172 * ls_adapt->qp + 9.249) + 0.2 * (-0.862 * log((6.718)) + 5);
+            data[i][j].utility = (u_max > 5) ? round(u_max) : u_max;
+            data[i][j].d0 = 0;
+            data[i][j].qp = round(ls_adapt->qp);
+            RATE += Rstep;
+            d0 = 0;
+            u_max = 0;
+        }
+    }
+    for (int i = 0; i < num_vd; i++) {
+        for (int j = 0; j < num_rate; j++) {
+            fprintf(fd, "%s", ls_vd[i].vd_name);
+            fprintf(fd, ",%f, %f, %f, %f\n", data[i][j].rate, data[i][j].utility,
+                                            data[i][j].d0, data[i][j].qp);
+        }
+    }
+    free(ls_adapt->ls_rate);
+    free(ls_vd->ls_qpvd);
     fclose(fd);
 
 #endif
@@ -221,7 +251,7 @@ int main(int arg, char **argv)
     fd = fopen(final_file, "w");
     int *result = (int *) malloc(sizeof(int) * num_vd);
     
-    for (BW = 4000; BW <= 4000;) {
+    for (BW = 4000; BW <= 17000;) {
         fprintf(fd, "BandWidth, Algorithm, Video name, Rate, Utility,\n");
         //fprintf(fd, ",BandWidth, Algorithm, Video name, Rate, Utility,\n");
         printf("===============\tBW = %f\t=================\n", BW);
@@ -258,8 +288,8 @@ int main(int arg, char **argv)
     }
 
     fclose(fd);
-    FILE *fd1 = fopen("al.csv", "w");
-    for (int BW = 3000; BW <= 4000;) {
+    FILE *fd1 = fopen("algorithm.csv", "w");
+    for (int BW = 3000; BW <= 17000;) {
         printf("_____________________Accurate Algorithm_____________\n");
         fprintf(fd1, ", Accurate Algorithm");
         
