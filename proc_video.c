@@ -316,9 +316,8 @@ void lagrange_algorithm(struct point d[5][20], double BW, int *select)
     int last_ind[num_vd];
     int temp = 0;
     double use_bw;
-    double minSlop = 0, maxSlop = 1, /*M_PI/2,*/ nextSlop;
+    double min_lamda = 0, max_lamda = 1, /*M_PI/2,*/ next_lamda;
     bool exit;
-    bool p = false;
 
     for (int i = 0; i < num_vd; i++) {
         last_ind[i] = 20;
@@ -326,9 +325,8 @@ void lagrange_algorithm(struct point d[5][20], double BW, int *select)
         first_ind[i] = 0;
     }
     while (true) {
-        if (p == true) break;
         use_bw = 0;
-        nextSlop = (minSlop + maxSlop)/2;
+        next_lamda = (min_lamda + max_lamda)/2;
         for (int i = 0; i < num_vd; i++) {
             double uLagrange = -1;
 
@@ -337,38 +335,13 @@ void lagrange_algorithm(struct point d[5][20], double BW, int *select)
                 continue;
             }
             for (int j = 0; j < 20; j++) {
-                if (d[i][j].utility - (nextSlop) * (d[i][j].rate) > uLagrange) {
-                    uLagrange = d[i][j].utility - (nextSlop) * (d[i][j].rate);
-                    if (p == false) 
-                        /*printf("i: %d, j: %d\tuL = u - h.R \t %f = %f - %f * %f\n"
-                        , i, j, uLagrange, d[i][j].utility, nextSlop, d[i][j].rate);
-                        if (uLagrange > d[i][j+1].utility - nextSlop*d[i][j+1].rate)
-                            printf("========:i: %d, j: %d\tuL = u - h.R \t %f = %f - %f * %f\n"
-                            , i, j, (d[i][j+1].utility - nextSlop*d[i][j+1].rate), 
-                            d[i][j+1].utility, nextSlop, d[i][j+1].rate);*/
+                if (d[i][j].utility - next_lamda * (d[i][j].rate) > uLagrange) {
+                    uLagrange = d[i][j].utility - next_lamda * (d[i][j].rate);
                     mid_ind[i] = j;
                 }
             }
-            //printf("\n\n");
             use_bw += d[i][mid_ind[i]].rate;
         }
-        /*printf("---------------------------\n");
-        printf("last_ind: [%d], [%d], [%d], [%d], [%d]\n", last_ind[0],
-            last_ind[1],
-            last_ind[2],
-            last_ind[3],
-            last_ind[4]);
-        printf("mid_ind : [%d], [%d], [%d], [%d], [%d]\n", mid_ind[0],
-            mid_ind[1],
-            mid_ind[2],
-            mid_ind[3],
-            mid_ind[4]);
-        printf("firt_ind: [%d], [%d], [%d], [%d], [%d]\n", first_ind[0],
-            first_ind[1],
-            first_ind[2],       
-            first_ind[3],
-            first_ind[4]);
-        printf("BW: %f\n", use_bw);*/
 
         if (use_bw == BW) {
             for (int i = 0; i < num_vd; i++) {
@@ -379,17 +352,16 @@ void lagrange_algorithm(struct point d[5][20], double BW, int *select)
             for (int i = 0; i < num_vd; i++) {
                 first_ind[i] = mid_ind[i];
             }
-            //printf("use_bw < BW-----maxSlop (%f) = nextSlop (%f), minSlop: %f\n", maxSlop, nextSlop, minSlop);
-            maxSlop = nextSlop;
+            max_lamda = next_lamda;
 
         } else if (use_bw > BW) {
             for (int i = 0; i < num_vd; i++) {
                 last_ind[i] = mid_ind[i];
             }
-            //printf("use_bw < BW====minSlop (%f) = nextSlop (%f), maxSlop: %f\n", minSlop, nextSlop, maxSlop);
-            minSlop = nextSlop;
+            min_lamda = next_lamda;
         }
         temp = 0;
+
         for (int i = 0; i < num_vd; i++) {
             temp += last_ind[i] - first_ind[i];
         }
